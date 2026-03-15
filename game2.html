@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Иероглифический Щит - Найди Пару</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-gold: #ffd700;
+            --card-back: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 10px;
+        }
+        .bg-pattern {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0,243,255,0.05) 2px, transparent 2px),
+                radial-gradient(circle at 50% 50%, rgba(255,215,0,0.05) 1px, transparent 1px);
+            background-size: 40px 40px, 20px 20px;
+            z-index: 0; pointer-events: none;
+        }
+        .game-header {
+            text-align: center; z-index: 10; margin-bottom: 15px; padding: 0 10px;
+        }
+        h1 {
+            color: var(--neon-gold); font-size: 20px;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5); margin-bottom: 5px;
+        }
+        .subtitle { color: #aaa; font-size: 11px; }
+
+        /* Сетка - АДАПТИВНАЯ */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 500px;
+            z-index: 10;
+            padding: 5px;
+        }
+
+        /* Карточка */
+        .card {
+            aspect-ratio: 3/4;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+            min-height: 60px;
+        }
+        .card.flipped { transform: rotateY(180deg); }
+        .card.matched {
+            animation: vanish 0.6s forwards;
+            pointer-events: none;
+        }
+        @keyframes vanish {
+            0% { transform: rotateY(180deg) scale(1); opacity: 1; }
+            50% { transform: rotateY(180deg) scale(1.1); opacity: 0.7; }
+            100% { transform: rotateY(180deg) scale(0); opacity: 0; }
+        }
+        .card-face {
+            position: absolute;
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.1);
+            padding: 3px;
+            font-weight: bold;
+        }
+        .card-front {
+            background: var(--card-back);
+            border-color: var(--neon-blue);
+            background-image: 
+                linear-gradient(45deg, rgba(0,243,255,0.1) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(0,243,255,0.1) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(0,243,255,0.1) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(0,243,255,0.1) 75%);
+            background-size: 15px 15px;
+        }
+        .card-front::after {
+            content: '☯';
+            font-size: 16px;
+            color: var(--neon-blue);
+            opacity: 0.6;
+        }
+        .card-back {
+            background: rgba(20,20,30,0.95);
+            transform: rotateY(180deg);
+            border-color: var(--neon-gold);
+            text-align: center;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .hanzi {
+            font-size: 22px;
+            color: var(--neon-gold);
+            text-shadow: 0 0 3px rgba(255,215,0,0.5);
+            line-height: 1.1;
+        }
+        .image {
+            font-size: 20px;
+        }
+
+        /* Экран победы */
+        .victory-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.4s;
+            padding: 20px;
+            text-align: center;
+        }
+        .victory-screen.show { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .victory-icon { font-size: 70px; margin-bottom: 15px; animation: bounce 1s infinite; }
+        @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .victory-text { font-size: 24px; color: var(--neon-gold); margin-bottom: 8px; }
+        .victory-sub { color: #aaa; font-size: 14px; margin-bottom: 25px; }
+
+        /* Адаптивность */
+        @media (max-width: 500px) {
+            .grid-container { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+            .card { min-height: 55px; }
+            .hanzi { font-size: 20px; }
+            .image { font-size: 18px; }
+            h1 { font-size: 18px; }
+        }
+        @media (max-width: 350px) {
+            .grid-container { grid-template-columns: repeat(3, 1fr); }
+            .card { min-height: 65px; }
+            .hanzi { font-size: 18px; }
+            .image { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    <div class="game-header">
+        <h1>🀄 Иероглифический Щит</h1>
+        <div class="subtitle">Найди 5 пар: Иероглиф + Картинка</div>
+    </div>
+    <div class="grid-container" id="gameGrid"></div>
+    <div class="victory-screen" id="victoryScreen">
+        <div class="victory-icon">🎉</div>
+        <div class="victory-text">ЩИТ АКТИВИРОВАН!</div>
+        <div class="victory-sub">Все пары найдены. Модуль взломан.</div>
+    </div>
+
+    <script>
+        // === БАЗА ДАННЫХ (30 слов) - ГАРАНТИЯ УНИКАЛЬНОСТИ ===
+        const database = [
+            // Фрукты
+            { id: 1, hanzi: '苹果', img: '🍎' }, { id: 2, hanzi: '香蕉', img: '🍌' },
+            { id: 3, hanzi: '葡萄', img: '🍇' }, { id: 4, hanzi: '西瓜', img: '🍉' },
+            { id: 5, hanzi: '橙子', img: '🍊' },
+            // Овощи
+            { id: 6, hanzi: '胡萝卜', img: '🥕' }, { id: 7, hanzi: '玉米', img: '🌽' },
+            { id: 8, hanzi: '茄子', img: '🍆' }, { id: 9, hanzi: '土豆', img: '🥔' },
+            { id: 10, hanzi: '西红柿', img: '🍅' },
+            // Животные
+            { id: 11, hanzi: '猫', img: '🐱' }, { id: 12, hanzi: '狗', img: '🐶' },
+            { id: 13, hanzi: '鱼', img: '🐟' }, { id: 14, hanzi: '鸟', img: '🐦' },
+            { id: 15, hanzi: '熊猫', img: '🐼' },
+            // Школа
+            { id: 16, hanzi: '书', img: '📚' }, { id: 17, hanzi: '笔', img: '✏️' },
+            { id: 18, hanzi: '书包', img: '🎒' }, { id: 19, hanzi: '尺子', img: '📏' },
+            { id: 20, hanzi: '电脑', img: '💻' },
+            // Цвета
+            { id: 21, hanzi: '红', img: '🔴' }, { id: 22, hanzi: '蓝', img: '🔵' },
+            { id: 23, hanzi: '绿', img: '🟢' }, { id: 24, hanzi: '白', img: '⚪' },
+            { id: 25, hanzi: '黑', img: '⚫' },
+            // Тело
+            { id: 26, hanzi: '手', img: '✋' }, { id: 27, hanzi: '脚', img: '🦶' },
+            { id: 28, hanzi: '眼', img: '👁️' }, { id: 29, hanzi: '嘴', img: '👄' },
+            { id: 30, hanzi: '耳', img: '👂' }
+        ];
+
+        let cardsArray = [], flippedCards = [], matchedPairs = 0;
+        const totalPairs = 5;
+        let isProcessing = false;
+        let gameFinished = false; // Флаг завершения игры
+
+        // Звуки (упрощённо)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            if (type === 'flip') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+            } else if (type === 'match') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(1000, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'win') {
+                const now = audioCtx.currentTime;
+                [523, 659, 784, 1046].forEach((f, i) => {
+                    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.type = 'sine'; o.frequency.value = f;
+                    g.gain.setValueAtTime(0.08, now + i*0.12);
+                    g.gain.linearRampToValueAtTime(0, now + i*0.12 + 0.25);
+                    o.start(now + i*0.12); o.stop(now + i*0.12 + 0.25);
+                });
+            }
+        }
+
+        // === ГЕНЕРАЦИЯ ИГРЫ - ГАРАНТИЯ ПРАВИЛЬНЫХ ПАР ===
+        function initGame() {
+            gameFinished = false;
+            
+            // 1. Выбираем 5 УНИКАЛЬНЫХ слов
+            const shuffled = [...database].sort(() => Math.random() - 0.5);
+            const selected = shuffled.slice(0, totalPairs);
+            
+            console.log('🎮 Выбраны слова:', selected);
+
+            // 2. Создаём ТОЛЬКО пары: для каждого слова — 1 иероглиф + 1 картинка
+            cardsArray = [];
+            selected.forEach(item => {
+                // Карточка с иероглифом
+                cardsArray.push({ id: item.id, content: item.hanzi, cls: 'hanzi' });
+                // Карточка с картинкой (ТОТ ЖЕ id!)
+                cardsArray.push({ id: item.id, content: item.img, cls: 'image' });
+            });
+
+            // 3. Перемешиваем 10 карточек
+            cardsArray.sort(() => Math.random() - 0.5);
+
+            // 4. Рендерим
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            cardsArray.forEach((card, idx) => {
+                const el = document.createElement('div');
+                el.className = 'card';
+                el.dataset.id = card.id; // ← КЛЮЧЕВОЕ: одинаковый id у пары
+                el.innerHTML = `
+                    <div class="card-face card-front"></div>
+                    <div class="card-face card-back">
+                        <div class="${card.cls}">${card.content}</div>
+                    </div>
+                `;
+                el.addEventListener('click', () => flipCard(el));
+                grid.appendChild(el);
+            });
+
+            matchedPairs = 0;
+            flippedCards = [];
+            isProcessing = false;
+        }
+
+        function flipCard(cardEl) {
+            if (isProcessing || gameFinished) return;
+            if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+
+            playSound('flip');
+            cardEl.classList.add('flipped');
+            flippedCards.push(cardEl);
+
+            if (flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            isProcessing = true;
+            const [c1, c2] = flippedCards;
+            const id1 = c1.dataset.id, id2 = c2.dataset.id;
+
+            console.log('🔍 Проверка:', id1, 'vs', id2);
+
+            if (id1 === id2) {
+                // ✅ СОВПАДЕНИЕ!
+                playSound('match');
+                matchedPairs++;
+                setTimeout(() => {
+                    c1.classList.add('matched');
+                    c2.classList.add('matched');
+                    flippedCards = [];
+                    isProcessing = false;
+
+                    if (matchedPairs === totalPairs) {
+                        victory();
+                    }
+                }, 400);
+            } else {
+                // ❌ Не совпало — переворачиваем обратно
+                setTimeout(() => {
+                    c1.classList.remove('flipped');
+                    c2.classList.remove('flipped');
+                    flippedCards = [];
+                    isProcessing = false;
+                }, 800);
+            }
+        }
+
+        function victory() {
+            gameFinished = true;
+            playSound('win');
+            document.getElementById('victoryScreen').classList.add('show');
+
+            // ОТПРАВЛЯЕМ РЕЗУЛЬТАТ РОДИТЕЛЮ
+            setTimeout(() => {
+                if (window.parent) {
+                    window.parent.postMessage({
+                        type: 'moduleComplete',
+                        moduleId: 2,
+                        perfect: true
+                    }, '*');
+                    console.log('📤 Отправлено: moduleComplete, moduleId=2');
+                }
+            }, 1500);
+        }
+
+        // Запуск
+        window.onload = initGame;
+
+        // Сброс от родителя
+        window.addEventListener('message', (e) => {
+            if (e.data?.type === 'resetGame') {
+                document.getElementById('victoryScreen').classList.remove('show');
+                initGame();
+            }
+        });
+    </script>
+</body>
+</html>

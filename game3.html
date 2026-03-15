@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Синтаксический Мост: Космический Протокол</title>
+    <style>
+        :root {
+            --en-color: #4facfe;
+            --cn-color: #ff6b6b;
+            --bg-dark: #0a0e27;
+            --neon-blue: #00f3ff;
+            --neon-green: #0aff0a;
+            --warning: #ffa500;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: radial-gradient(circle at center, #1a1f3a 0%, #050610 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .star { position: absolute; background: white; border-radius: 50%; animation: twinkle 2s infinite; }
+        @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        .header {
+            text-align: center;
+            padding: 10px 20px;
+            background: rgba(0, 243, 255, 0.05);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+        .title { 
+            color: var(--neon-blue); 
+            font-size: clamp(16px, 3vw, 20px); 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+        .progress-bar-container {
+            width: 100%; max-width: 400px; height: 6px;
+            background: rgba(255,255,255,0.1);
+            margin: 8px auto 0; border-radius: 3px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, var(--en-color), var(--cn-color));
+            width: 0%; transition: width 0.5s ease;
+        }
+        .level-info { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+            z-index: 10;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .bridge-row {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .bridge-zone {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 8px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .bridge-zone.en { border-color: rgba(79, 172, 254, 0.3); box-shadow: inset 0 0 20px rgba(79, 172, 254, 0.05); }
+        .bridge-zone.cn { border-color: rgba(255, 107, 107, 0.3); box-shadow: inset 0 0 20px rgba(255, 107, 107, 0.05); }
+
+        .zone-label {
+            position: absolute;
+            top: -10px; left: 15px;
+            background: var(--bg-dark);
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid currentColor;
+        }
+        .bridge-zone.en .zone-label { color: var(--en-color); }
+        .bridge-zone.cn .zone-label { color: var(--cn-color); }
+
+        .basket-container {
+            min-height: 100px;
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.1) 0%, rgba(0, 100, 255, 0.05) 100%);
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 8px;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1), inset 0 0 20px rgba(0, 243, 255, 0.05);
+        }
+        
+        .basket-label {
+            position: absolute;
+            top: -10px; left: 20px;
+            color: var(--neon-blue); 
+            font-size: 11px; 
+            text-transform: uppercase;
+            background: rgba(10, 14, 39, 0.9); 
+            padding: 2px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--neon-blue);
+            letter-spacing: 1px;
+        }
+
+        .word-card {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #2a2a3a, #1a1a2a);
+            border: 1px solid #444;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: clamp(14px, 2vw, 18px);
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .word-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            opacity: 0.7;
+        }
+        .word-card[data-lang="en"]::before { background: var(--en-color); }
+        .word-card[data-lang="cn"]::before { background: var(--cn-color); }
+
+        .word-card:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 15px rgba(0,0,0,0.4); }
+        
+        .word-card.selected {
+            background: linear-gradient(135deg, #fff, #e0f7ff);
+            color: #000;
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.6);
+            z-index: 100;
+            border-color: var(--neon-blue);
+        }
+        
+        .word-card.placed {
+            opacity: 1;
+            cursor: pointer;
+            transform: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .word-card.placed[data-lang="en"] { 
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.3), rgba(79, 172, 254, 0.1)); 
+            border-color: var(--en-color); 
+            color: #aaddff; 
+        }
+        .word-card.placed[data-lang="cn"] { 
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(255, 107, 107, 0.1)); 
+            border-color: var(--cn-color); 
+            color: #ffcccc; 
+        }
+        
+        .word-card.placed:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            border-color: #fff;
+        }
+
+        .word-card.shake { animation: shake 0.4s; background: rgba(255, 0, 60, 0.3); border-color: #ff003c; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding-top: 10px;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .btn-check {
+            background: var(--neon-green); color: #000;
+            box-shadow: 0 0 15px rgba(10, 255, 10, 0.4);
+        }
+        .btn-check:hover { box-shadow: 0 0 25px rgba(10, 255, 10, 0.6); transform: scale(1.05); }
+        .btn-reset {
+            background: rgba(255,255,255,0.1); color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-reset:hover { background: rgba(255,255,255,0.2); }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+        .message-area {
+            height: 24px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+
+        .victory-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+        }
+        .victory-screen.show { display: flex; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .victory-icon { 
+            font-size: clamp(60px, 15vw, 100px); 
+            margin-bottom: 20px; 
+            filter: drop-shadow(0 0 30px currentColor);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .victory-text {
+            font-size: clamp(24px, 6vw, 42px);
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            line-height: 1.2;
+            font-weight: bold;
+        }
+        
+        .victory-text.perfect {
+            color: var(--neon-green);
+            text-shadow: 0 0 30px rgba(10, 255, 10, 0.6);
+        }
+        
+        .victory-text.imperfect {
+            color: var(--warning);
+            text-shadow: 0 0 30px rgba(255, 165, 0, 0.6);
+        }
+        
+        .victory-sub { 
+            color: #aaa; 
+            margin-bottom: 30px; 
+            font-size: clamp(14px, 3vw, 18px);
+            max-width: 400px;
+            line-height: 1.5;
+        }
+        
+        .victory-btn {
+            padding: 15px 50px;
+            background: var(--neon-green);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(10, 255, 10, 0.4);
+            text-transform: uppercase;
+            clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+            transition: all 0.3s;
+        }
+        .victory-btn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(10, 255, 10, 0.6); }
+
+        @media (max-width: 600px) {
+            .bridge-row { flex-direction: column; gap: 10px; }
+            .bridge-zone { min-height: 80px; }
+            .basket-container { min-height: 80px; padding: 12px; }
+            .word-card { padding: 6px 10px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="header">
+        <div class="title">🌉 Синтаксический Мост</div>
+        <div class="progress-bar-container">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="level-info">Уровень <span id="currentLevelNum">1</span> из 5</div>
+    </div>
+
+    <div class="game-area">
+        <div class="bridge-row">
+            <div class="bridge-zone en" id="zone-en">
+                <div class="zone-label">🇬 English Protocol</div>
+            </div>
+            <div class="bridge-zone cn" id="zone-cn">
+                <div class="zone-label">🇨🇳 Chinese Protocol</div>
+            </div>
+        </div>
+
+        <div class="message-area" id="message"></div>
+
+        <div class="basket-container" id="basket">
+            <div class="basket-label">⚡ Data Stream</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-reset" onclick="resetLevel()">↺ Сброс</button>
+            <button class="btn btn-check" id="checkBtn" onclick="checkBridge()">⚡ Активировать мост</button>
+        </div>
+    </div>
+
+    <div class="victory-screen" id="victoryScreen">
+        <div class="victory-icon" id="victoryIcon">🚀</div>
+        <div class="victory-text" id="victoryText">МОСТ ВОССТАНОВЛЕН!</div>
+        <div class="victory-sub" id="victorySub"></div>
+        <button class="victory-btn" onclick="completeGame()">Вернуться на корабль</button>
+    </div>
+
+    <script>
+        const database = [
+            { en: ["I", "love", "coding"], cn: ["我", "喜欢", "编程"], mean: "Я люблю программировать" },
+            { en: ["She", "drinks", "tea"], cn: ["她", "喝", "茶"], mean: "Она пьет чай" },
+            { en: ["We", "are", "students"], cn: ["我们", "是", "学生"], mean: "Мы студенты" },
+            { en: ["He", "is", "very", "tall"], cn: ["他", "很", "高"], mean: "Он очень высокий" },
+            { en: ["They", "go", "to", "school"], cn: ["他们", "去", "学校"], mean: "Они ходят в школу" },
+            { en: ["I", "eat", "breakfast", "now"], cn: ["我", "现在", "吃", "早饭"], mean: "Я ем завтрак сейчас" },
+            { en: ["She", "will", "come", "tomorrow"], cn: ["她", "明天", "来"], mean: "Она придет завтра" },
+            { en: ["We", "studied", "Chinese", "yesterday"], cn: ["我们", "昨天", "学", "中文"], mean: "Мы учили китайский вчера" },
+            { en: ["He", "often", "plays", "games"], cn: ["他", "经常", "玩", "游戏"], mean: "Он часто играет в игры" },
+            { en: ["I", "want", "to", "buy", "water"], cn: ["我", "想", "买", "水"], mean: "Я хочу купить воду" },
+            { en: ["I", "do", "not", "know"], cn: ["我", "不", "知道"], mean: "Я не знаю" },
+            { en: ["She", "is", "at", "home"], cn: ["她", "在", "家"], mean: "Она дома" },
+            { en: ["We", "live", "in", "China"], cn: ["我们", "住", "在", "中国"], mean: "Мы живем в Китае" },
+            { en: ["They", "have", "a", "cat"], cn: ["他们", "有", "一", "只", "猫"], mean: "У них есть кот" },
+            { en: ["This", "book", "is", "good"], cn: ["这", "本", "书", "好"], mean: "Эта книга хорошая" },
+            { en: ["Can", "you", "help", "me"], cn: ["你", "能", "帮", "我", "吗"], mean: "Ты можешь мне помочь?" },
+            { en: ["What", "is", "your", "name"], cn: ["你", "叫", "什么", "名字"], mean: "Как тебя зовут?" },
+            { en: ["I", "am", "very", "happy"], cn: ["我", "很", "高兴"], mean: "Я очень рад" },
+            { en: ["Please", "give", "me", "coffee"], cn: ["请", "给", "我", "咖啡"], mean: "Пожалуйста, дай мне кофе" },
+            { en: ["Today", "is", "very", "hot"], cn: ["今天", "很", "热"], mean: "Сегодня очень жарко" }
+        ];
+
+        let levels = [];
+        let currentLevelIdx = 0;
+        let hadErrors = false;
+        let selectedCard = null;
+
+        window.onload = () => {
+            createStars();
+            pickLevels();
+            loadLevel(0);
+        };
+
+        function createStars() {
+            const container = document.getElementById('stars');
+            for(let i=0; i<50; i++) {
+                const s = document.createElement('div');
+                s.className = 'star';
+                s.style.left = Math.random()*100 + '%';
+                s.style.top = Math.random()*100 + '%';
+                s.style.width = Math.random()*2 + 'px';
+                s.style.height = s.style.width;
+                s.style.animationDelay = Math.random()*2 + 's';
+                container.appendChild(s);
+            }
+        }
+
+        function pickLevels() {
+            const shuffled = [...database].sort(() => Math.random() - 0.5);
+            levels = shuffled.slice(0, 5);
+        }
+
+        function loadLevel(idx) {
+            currentLevelIdx = idx;
+            const level = levels[idx];
+            
+            document.getElementById('currentLevelNum').textContent = idx + 1;
+            document.getElementById('progressFill').style.width = ((idx) / 5 * 100) + '%';
+            document.getElementById('message').textContent = `Перевод: "${level.mean}"`;
+            document.getElementById('checkBtn').disabled = false;
+            
+            const zoneEn = document.getElementById('zone-en');
+            const zoneCn = document.getElementById('zone-cn');
+            const basket = document.getElementById('basket');
+            
+            zoneEn.innerHTML = '<div class="zone-label">🇬 English Protocol</div>';
+            zoneCn.innerHTML = '<div class="zone-label">🇨🇳 Chinese Protocol</div>';
+            basket.innerHTML = '<div class="basket-label">⚡ Data Stream</div>';
+            
+            selectedCard = null;
+
+            let allWords = [];
+            level.en.forEach((w, i) => allWords.push({ text: w, lang: 'en', id: `en-${i}` }));
+            level.cn.forEach((w, i) => allWords.push({ text: w, lang: 'cn', id: `cn-${i}` }));
+
+            allWords.sort(() => Math.random() - 0.5);
+
+            allWords.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.textContent = item.text;
+                card.dataset.lang = item.lang;
+                card.dataset.id = item.id;
+                card.onclick = (e) => handleCardClick(e, card);
+                basket.appendChild(card);
+            });
+        }
+
+        function handleCardClick(e, card) {
+            e.stopPropagation();
+            
+            if (card.classList.contains('placed')) {
+                returnToBasket(card);
+                return;
+            }
+
+            if (selectedCard === card) {
+                card.classList.remove('selected');
+                selectedCard = null;
+                return;
+            }
+
+            if (selectedCard) selectedCard.classList.remove('selected');
+
+            card.classList.add('selected');
+            selectedCard = card;
+        }
+
+        function returnToBasket(card) {
+            const basket = document.getElementById('basket');
+            
+            card.classList.remove('placed');
+            card.classList.remove('selected');
+            
+            card.style.transform = 'scale(0.8)';
+            card.style.opacity = '0.5';
+            
+            setTimeout(() => {
+                basket.appendChild(card);
+                card.style.transform = '';
+                card.style.opacity = '';
+            }, 200);
+            
+            if (selectedCard === card) {
+                selectedCard = null;
+            }
+            
+            showMessage("↩️ Слово возвращено", "success");
+            checkAutoSubmit();
+        }
+
+        document.getElementById('zone-en').addEventListener('click', () => placeToZone('en'));
+        document.getElementById('zone-cn').addEventListener('click', () => placeToZone('cn'));
+
+        function placeToZone(targetLang) {
+            if (!selectedCard) return;
+
+            const cardLang = selectedCard.dataset.lang;
+            
+            if (cardLang !== targetLang) {
+                showMessage("❌ Ошибка протокола! Неверный язык.", "error");
+                selectedCard.classList.add('shake');
+                setTimeout(() => selectedCard.classList.remove('shake'), 400);
+                return;
+            }
+
+            const zone = document.getElementById(`zone-${targetLang}`);
+            selectedCard.classList.remove('selected');
+            selectedCard.classList.add('placed');
+            zone.appendChild(selectedCard);
+            
+            selectedCard = null;
+            checkAutoSubmit();
+        }
+
+        function checkAutoSubmit() {
+            const level = levels[currentLevelIdx];
+            const zoneEn = document.getElementById('zone-en');
+            const zoneCn = document.getElementById('zone-cn');
+            
+            const enComplete = zoneEn.children.length - 1 === level.en.length;
+            const cnComplete = zoneCn.children.length - 1 === level.cn.length;
+            
+            if (enComplete && cnComplete) {
+                document.getElementById('checkBtn').style.boxShadow = "0 0 25px rgba(10, 255, 10, 0.8)";
+            } else {
+                document.getElementById('checkBtn').style.boxShadow = "none";
+            }
+        }
+
+        function checkBridge() {
+            const level = levels[currentLevelIdx];
+            const zoneEn = document.getElementById('zone-en');
+            const zoneCn = document.getElementById('zone-cn');
+            
+            const userEn = Array.from(zoneEn.querySelectorAll('.word-card')).map(c => c.textContent);
+            const userCn = Array.from(zoneCn.querySelectorAll('.word-card')).map(c => c.textContent);
+
+            const isEnCorrect = JSON.stringify(userEn) === JSON.stringify(level.en);
+            const isCnCorrect = JSON.stringify(userCn) === JSON.stringify(level.cn);
+
+            if (isEnCorrect && isCnCorrect) {
+                showMessage("✅ Мост стабилен! Синхронизация...", "success");
+                playSuccessSound();
+                document.getElementById('checkBtn').disabled = true;
+                
+                setTimeout(() => {
+                    if (currentLevelIdx >= 4) {
+                        showVictory();
+                    } else {
+                        loadLevel(currentLevelIdx + 1);
+                    }
+                }, 1500);
+            } else {
+                hadErrors = true;
+                showMessage("❌ Разрыв связи! Проверь порядок слов.", "error");
+                playErrorSound();
+                
+                if (!isEnCorrect) shakeZone(zoneEn);
+                if (!isCnCorrect) shakeZone(zoneCn);
+                
+                document.getElementById('checkBtn').style.boxShadow = "none";
+            }
+        }
+
+        function shakeZone(zone) {
+            const cards = zone.querySelectorAll('.word-card');
+            cards.forEach(c => {
+                c.classList.add('shake');
+                setTimeout(() => c.classList.remove('shake'), 400);
+            });
+        }
+
+        function resetLevel() {
+            loadLevel(currentLevelIdx);
+            showMessage("", "");
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.color = type === 'success' ? 'var(--neon-green)' : type === 'error' ? '#ff6b8a' : 'var(--neon-blue)';
+        }
+
+        // ═══════════════════════════════════════
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ
+        function showVictory() {
+            document.getElementById('progressFill').style.width = '100%';
+            const screen = document.getElementById('victoryScreen');
+            const icon = document.getElementById('victoryIcon');
+            const text = document.getElementById('victoryText');
+            const sub = document.getElementById('victorySub');
+            
+            text.className = 'victory-text';
+            
+            if (hadErrors) {
+                icon.textContent = '⚠️';
+                icon.style.color = 'var(--warning)';
+                text.textContent = 'МОСТ АКТИВИРОВАН';
+                text.classList.add('imperfect');
+                sub.textContent = 'Система работает, но требуются улучшения. Попробуй пройти без ошибок для идеальной синхронизации!';
+            } else {
+                icon.textContent = '🚀';
+                icon.style.color = 'var(--neon-green)';
+                text.textContent = 'МОСТ ВОССТАНОВЛЕН!\nСИСТЕМЫ В НОРМЕ';
+                text.classList.add('perfect');
+                sub.textContent = 'Идеальная синхронизация достигнута! Корабль готов к полету!';
+            }
+            
+            screen.classList.add('show');
+            playVictorySound();
+
+            // ═══════════════════════════════════════
+            // ОТПРАВЛЯЕМ РЕЗУЛЬТАТ РОДИТЕЛЮ ЧЕРЕЗ 1.5 СЕКУНДЫ
+            setTimeout(() => {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ 
+                        type: 'moduleComplete',  // ← ИСПРАВЛЕНО: было 'action'
+                        moduleId: 3, 
+                        perfect: !hadErrors 
+                    }, '*');
+                }
+            }, 1500);
+            // ═══════════════════════════════════════
+        }
+
+        function completeGame() {
+            if (window.parent !== window) {
+                window.parent.postMessage({ 
+                    type: 'moduleComplete',  // ← ИСПРАВЛЕНО: было 'action'
+                    moduleId: 3, 
+                    perfect: !hadErrors 
+                }, '*');
+            }
+            window.close();
+        }
+
+        function playSuccessSound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 880; osc.type = 'sine';
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
+        }
+        function playErrorSound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 150; osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            osc.start(); osc.stop(ctx.currentTime + 0.4);
+        }
+        function playVictorySound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [523, 659, 784, 1047].forEach((f, i) => {
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = f;
+                gain.gain.setValueAtTime(0, ctx.currentTime + i*0.15);
+                gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i*0.15 + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i*0.15 + 0.4);
+                osc.start(ctx.currentTime + i*0.15); osc.stop(ctx.currentTime + i*0.15 + 0.4);
+            });
+        }
+    </script>
+</body>
+</html>

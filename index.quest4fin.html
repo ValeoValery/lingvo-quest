@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Тайная Лаборатория Лингво-Кода</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0b0c15 0%, #1a1a2e 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .intro-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #0b0c15 0%, #1a1a2e 100%);
+            transition: opacity 0.5s ease;
+        }
+        .intro-screen.hidden { opacity: 0; pointer-events: none; display: none; }
+
+        .character-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            max-width: 500px;
+            width: 100%;
+            background: rgba(0, 243, 255, 0.1);
+            border: 2px solid #00f3ff;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+        }
+
+        .character-sprite {
+            width: 120px; height: 120px;
+            background: linear-gradient(135deg, #ffa500, #ff6b6b);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 80px;
+            animation: float 3s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.6);
+            border: 4px solid #fff;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .dialogue-box {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            border-left: 4px solid #00f3ff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .character-name {
+            color: #00f3ff;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .dialogue-text {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+        }
+
+        .start-btn {
+            width: 100%;
+            background: #0aff0a;
+            color: #000;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-radius: 8px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px #0aff0a;
+        }
+        .start-btn:active { transform: scale(0.95); }
+
+        .game-screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .game-screen.visible { opacity: 1; }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 2px solid #00f3ff;
+            border-radius: 15px;
+        }
+
+        .game-title {
+            color: #00f3ff;
+            font-size: 22px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #00f3ff;
+        }
+        .game-subtitle { color: #aaa; font-size: 14px; margin-top: 5px; }
+
+        .modules-panel {
+            max-width: 500px;
+            margin: 0 auto 30px;
+            background: rgba(16, 20, 30, 0.95);
+            border: 2px solid #00f3ff;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        .panel-title {
+            color: #00f3ff;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #00f3ff;
+            padding-bottom: 10px;
+        }
+
+        .module-btn {
+            width: 100%;
+            padding: 18px;
+            margin-bottom: 12px;
+            background: transparent;
+            border: 2px solid #00f3ff;
+            color: #00f3ff;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 8px;
+            transition: all 0.3s;
+            text-align: left;
+            position: relative;
+        }
+        .module-btn:active:not(:disabled) {
+            background: #00f3ff; color: #000; transform: scale(0.98);
+        }
+        .module-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .module-btn.in-progress {
+            border-color: #ffe600; color: #ffe600; animation: pulse 2s infinite;
+        }
+        .module-btn.completed-perfect {
+            border-color: #0aff0a; color: #0aff0a; background: rgba(10, 255, 10, 0.1);
+        }
+        .module-btn.completed-error {
+            border-color: #ff003c; color: #ff003c; background: rgba(255, 0, 60, 0.1);
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 5px #ffe600; }
+            50% { box-shadow: 0 0 20px #ffe600; }
+        }
+
+        .module-status {
+            position: absolute; right: 15px; top: 50%;
+            transform: translateY(-50%); font-size: 18px;
+        }
+
+        .exit-btn {
+            width: 100%; padding: 18px; margin-top: 20px;
+            background: transparent; border: 2px solid #ff003c;
+            color: #ff003c; cursor: pointer; font-family: inherit;
+            font-size: 16px; font-weight: bold; text-transform: uppercase;
+            border-radius: 8px; transition: all 0.3s;
+        }
+        .exit-btn:active:not(:disabled) { background: #ff003c; color: #000; }
+        .exit-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #555; color: #555; }
+        .exit-btn.ready { animation: glow 2s infinite; }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px #ff003c; }
+            50% { box-shadow: 0 0 25px #ff003c; }
+        }
+
+        .progress-container {
+            max-width: 500px; margin: 0 auto 30px; padding: 15px;
+            background: rgba(0, 0, 0, 0.5); border-radius: 10px; border: 1px solid #333;
+        }
+        .progress-label { text-align: center; color: #aaa; font-size: 14px; margin-bottom: 10px; }
+        .progress-bar { height: 20px; background: #222; border-radius: 10px; overflow: hidden; position: relative; }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #00f3ff, #0aff0a);
+            width: 0%; transition: width 0.5s ease; border-radius: 10px;
+        }
+        .progress-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); color: white;
+            font-size: 12px; font-weight: bold;
+        }
+
+        .mascot {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 90px; height: 90px; z-index: 50;
+        }
+        .mascot-sprite {
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #ffa500, #ff6b6b);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 55px; border: 3px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.6); cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .mascot-sprite:active { transform: scale(0.9); }
+
+        .mascot-bubble {
+            position: fixed; bottom: 120px; right: 20px;
+            background: rgba(0, 0, 0, 0.95); border: 2px solid #00f3ff;
+            border-radius: 10px; padding: 15px; max-width: 280px;
+            font-size: 14px; line-height: 1.5; display: none; z-index: 51;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+        .mascot-bubble::after {
+            content: ''; position: absolute; bottom: -10px; right: 30px;
+            border-width: 10px 10px 0; border-style: solid;
+            border-color: #00f3ff transparent transparent transparent;
+        }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95);
+            z-index: 100; padding: 10px; overflow: hidden;
+        }
+        .modal-content {
+            background: #111; border: 3px solid #00f3ff;
+            border-radius: 15px; overflow: hidden; 
+            width: 100%; max-width: 800px;
+            height: 100%; max-height: 95vh;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.4);
+        }
+        .modal-header {
+            padding: 12px 15px; background: linear-gradient(90deg, #00f3ff, #bf00ff);
+            color: #000; font-weight: bold; font-size: 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0;
+        }
+        .close-modal {
+            cursor: pointer; font-size: 24px; background: rgba(0,0,0,0.2);
+            width: 30px; height: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s; flex-shrink: 0;
+        }
+        .close-modal:active { background: rgba(0,0,0,0.4); transform: scale(0.9); }
+
+        .hint-btn {
+            background: rgba(0, 243, 255, 0.2);
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+            padding: 5px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .hint-btn:hover {
+            background: rgba(0, 243, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .game-frame { 
+            flex: 1; 
+            background: #fff; 
+            position: relative;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .game-frame iframe {
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            position: absolute;
+            top: 0; 
+            left: 0;
+        }
+
+        .modal-footer { 
+            padding: 12px; 
+            background: #222; 
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .complete-btn { 
+            background: #555; color: #888; border: none;
+            padding: 10px 25px; font-size: 13px; font-weight: bold;
+            cursor: not-allowed; text-transform: uppercase; border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .complete-btn.active {
+            background: #0aff0a; color: #000; cursor: pointer;
+            box-shadow: 0 0 15px #0aff0a;
+        }
+        .complete-btn.active:active { transform: scale(0.95); }
+
+        .rules-popup {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .rules-popup.show { display: flex; }
+
+        .rules-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0b0c15 100%);
+            border: 3px solid #00f3ff;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 25px;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.5);
+            animation: popupAppear 0.3s;
+        }
+
+        @keyframes popupAppear {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .rules-title {
+            color: #00f3ff;
+            font-size: 22px;
+            margin-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .rules-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #e0e0e0;
+            margin-bottom: 15px;
+        }
+
+        .rules-text strong {
+            color: #00f3ff;
+        }
+
+        .tone-examples-popup {
+            background: rgba(0, 243, 255, 0.1);
+            border-left: 3px solid #00f3ff;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .tone-examples-popup span {
+            display: inline-block;
+            margin: 4px 6px;
+            padding: 5px 10px;
+            background: rgba(0, 243, 255, 0.2);
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .rules-btn {
+            width: 100%;
+            padding: 15px;
+            background: #0aff0a;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            box-shadow: 0 0 20px rgba(10, 255, 10, 0.4);
+            transition: all 0.3s;
+        }
+        .rules-btn:active { transform: scale(0.95); }
+
+        /* ЭКРАН ПОБЕДЫ */
+        .victory-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #000000 0%, #0a0a2e 50%, #1a1a4e 100%);
+            z-index: 200;
+            overflow: hidden;
+        }
+        .victory-screen.show { display: block; }
+
+        .stars {
+            position: absolute;
+            width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent);
+            background-size: 200% 200%;
+            animation: starsMove 10s linear infinite;
+        }
+
+        @keyframes starsMove {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+
+        .victory-content {
+            position: relative;
+            z-index: 210;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .victory-text {
+            font-size: 32px;
+            color: #00f3ff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #00f3ff;
+            animation: fadeIn 1s;
+        }
+
+        .victory-subtext {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 40px;
+            animation: fadeIn 1.5s;
+        }
+
+        .rocket-container {
+            position: relative;
+            width: 200px;
+            height: 300px;
+            margin: 20px auto;
+            animation: rocketLaunch 8s ease-in forwards;
+        }
+
+        @keyframes rocketLaunch {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            20% { transform: translateY(-50px) scale(1.1); }
+            100% { transform: translateY(-1000px) scale(0.5); opacity: 0; }
+        }
+
+        .rocket {
+            font-size: 120px;
+            text-align: center;
+            filter: drop-shadow(0 0 20px #ff6b6b);
+        }
+
+        .rocket-flame {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 80px;
+            background: linear-gradient(to bottom, #ff6b00, #ff0000, transparent);
+            border-radius: 50%;
+            animation: flame 0.1s infinite;
+            filter: blur(5px);
+        }
+
+        @keyframes flame {
+            0%, 100% { height: 80px; opacity: 1; }
+            50% { height: 100px; opacity: 0.8; }
+        }
+
+        .cat-in-rocket {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 50px;
+            z-index: 220;
+        }
+
+        .final-message {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 243, 255, 0.9);
+            color: #000;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            animation: fadeIn 3s, fadeOut 1s 7s forwards;
+            max-width: 80%;
+        }
+
+        /* КНОПКА ПЕРЕИГРАТЬ */
+        .retry-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            background: rgba(255, 165, 0, 0.9);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
+            animation: fadeIn 5s;
+            transition: all 0.3s;
+        }
+        .retry-btn:hover {
+            background: rgba(255, 165, 0, 1);
+            box-shadow: 0 0 30px rgba(255, 165, 0, 0.8);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        @media (max-width: 600px) {
+            .character-sprite { width: 100px; height: 100px; font-size: 60px; }
+            .dialogue-text { font-size: 14px; }
+            .module-btn { font-size: 13px; padding: 15px; }
+            .mascot { width: 70px; height: 70px; bottom: 15px; right: 15px; }
+            .mascot-sprite { font-size: 45px; }
+            .mascot-bubble { bottom: 95px; right: 15px; max-width: 220px; font-size: 13px; }
+            .modal-header { font-size: 13px; padding: 10px 12px; }
+            .rules-content { padding: 20px; }
+            .rules-title { font-size: 18px; }
+            .rules-text { font-size: 13px; }
+            .victory-text { font-size: 24px; }
+            .victory-subtext { font-size: 14px; }
+            .rocket-container { width: 150px; height: 220px; }
+            .rocket { font-size: 80px; }
+            .cat-in-rocket { font-size: 35px; top: 30px; }
+            .final-message { font-size: 16px; padding: 15px 25px; bottom: 80px; }
+            .retry-btn { font-size: 14px; padding: 12px 30px; bottom: 20px; }
+        }
+        
+        @media (max-width: 400px) {
+            .character-container { padding: 20px; }
+            .module-btn { font-size: 12px; padding: 12px; }
+        }
+        
+        @media (min-width: 768px) {
+            .character-container { max-width: 600px; padding: 35px; }
+            .character-sprite { width: 150px; height: 150px; font-size: 100px; }
+            .dialogue-text { font-size: 16px; }
+            .modules-panel { max-width: 600px; }
+            .module-btn { font-size: 15px; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- СТАРТОВЫЙ ЭКРАН -->
+    <div class="intro-screen" id="introScreen">
+        <div class="character-container">
+            <div class="character-sprite">🐱</div>
+            <div class="dialogue-box">
+                <div class="character-name">Глюк - Системный Кот</div>
+                <div class="dialogue-text">
+                    Мяу! Агент, мне нужна помощь! Корабль "Лингво-1" атакован вирусом. 
+                    Я заперт в лаборатории, системы заблокированы.<br><br>
+                    Чтобы спастись, нужно взломать 3 защитных модуля с языковыми кодами 
+                    (китайские тоны, иероглифы и синтаксис).<br><br>
+                    Выбирай любой модуль в любом порядке. Только идеальное выполнение 
+                    откроет шлюз!
+                </div>
+                <button class="start-btn" onclick="startGame()">Начать миссию</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОСНОВНОЙ ЭКРАН -->
+    <div class="game-screen" id="gameScreen">
+        <div class="game-header">
+            <div class="game-title">🚀 Корабль "Лингво-1"</div>
+            <div class="game-subtitle">Система защиты активна. Требуется взлом.</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-label">Прогресс взлома</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-text" id="progressText">0/3</div>
+            </div>
+        </div>
+
+        <div class="modules-panel">
+            <div class="panel-title">🔧 Защитные модули</div>
+            
+            <button class="module-btn" id="btn-1" onclick="openModule(1)">
+                🔊 Модуль 1: Фонетический код (Китайские тоны)
+                <span class="module-status" id="status-1">⏳</span>
+            </button>
+            
+            <button class="module-btn" id="btn-2" onclick="openModule(2)">
+                🔣 Модуль 2: Иероглифический щит (Memory)
+                <span class="module-status" id="status-2">⏳</span>
+            </button>
+            
+            <button class="module-btn" id="btn-3" onclick="openModule(3)">
+                🌉 Модуль 3: Синтаксический мост (EN-CN)
+                <span class="module-status" id="status-3">⏳</span>
+            </button>
+            
+            <button class="exit-btn" id="exitBtn" onclick="tryExit()" disabled>
+                🚀 Активировать шлюз
+            </button>
+        </div>
+
+        <div class="mascot">
+            <div class="mascot-bubble" id="mascotBubble"></div>
+            <div class="mascot-sprite" onclick="showHint()">🐱</div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА -->
+    <div class="modal" id="gameModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalTitle">Модуль</span>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="hint-btn" onclick="showRulesPopup()">❓ Правила</button>
+                    <span class="close-modal" onclick="closeModal()">×</span>
+                </div>
+            </div>
+            
+            <div class="game-frame" id="gameFrame"></div>
+            
+            <div class="modal-footer">
+                <button class="complete-btn" id="completeBtn" disabled>
+                    ⏳ Игра ещё не завершена...
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP С ПРАВИЛАМИ -->
+    <div class="rules-popup" id="rulesPopup">
+        <div class="rules-content">
+            <div class="rules-title" id="rulesTitle">📋 Правила модуля</div>
+            <div class="rules-text" id="rulesText"></div>
+            <div class="tone-examples-popup" id="toneExamplesPopup" style="display: none;"></div>
+            <button class="rules-btn" onclick="closeRulesPopup()">🚀 Начать взлом!</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН ПОБЕДЫ -->
+    <div class="victory-screen" id="victoryScreen">
+        <div class="stars"></div>
+        <div class="victory-content">
+            <div class="victory-text" id="victoryText">🏆 МИССИЯ ВЫПОЛНЕНА! 🏆</div>
+            <div class="victory-subtext" id="victorySubtext">Все модули взломаны идеально!<br>Корабль "Лингво-1" спасён!</div>
+            
+            <div class="rocket-container" id="rocketContainer">
+                <div class="cat-in-rocket" id="catSprite">🐱</div>
+                <div class="rocket">🚀</div>
+                <div class="rocket-flame"></div>
+            </div>
+            
+            <div class="final-message" id="finalMessage">
+                Спасибо за помощь, Агент! Глюк отправляется домой! 🌟
+            </div>
+            
+            <!-- КНОПКА ПЕРЕИГРАТЬ (появится только при неидеальном прохождении) -->
+            <button class="retry-btn" id="retryBtn" onclick="retryGame()" style="display: none;">
+                🔄 Исправить ошибки
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const gameState = {
+            modules: {
+                1: { status: 'waiting', perfect: false, name: 'Фонетический код (Китайские тоны)' },
+                2: { status: 'waiting', perfect: false, name: 'Иероглифический щит (Memory)' },
+                3: { status: 'waiting', perfect: false, name: 'Синтаксический мост (EN-CN)' }
+            },
+            currentModule: null,
+            gameCompleted: false
+        };
+
+        const gameUrls = {
+            1: 'game1.html',
+            2: 'game2.html',
+            3: 'game3.html'
+        };
+
+        const moduleHints = {
+            1: "🎧 <strong>Распознай тон!</strong> Ты услышишь китайское слово. Выбери карточку с правильным тоном.<br><br><strong>Правила:</strong> Нужно 5 правильных ответов подряд. Ошибка — и счётчик сбрасывается!",
+            2: "🀄 <strong>Иероглифический щит!</strong> Найди 5 пар: иероглиф + картинка.<br><br><strong>Правила:</strong> Переворачивай карточки, запоминай расположение. Собери все пары, чтобы активировать щит!",
+            3: "🌉 <strong>Синтаксический мост!</strong> Построй мост между английским и китайским.<br><br><strong>Правила:</strong> Расставь слова в правильном порядке для обоих языков. Помни: в китайском порядок слов может отличаться от английского!"
+        };
+
+        const toneExamples = `<strong>Запомни тоны:</strong><br><span>ā (1-й: ровный)</span><span>á (2-й: восходящий ↑)</span><br><span>ǎ (3-й: галочка ∨)</span><span>à (4-й: резкий ↓)</span>`;
+
+        window.addEventListener('message', function(e) {
+            if (e.data.type === 'moduleComplete') {
+                const moduleId = e.data.moduleId;
+                const perfect = e.data.perfect;
+                
+                gameState.gameCompleted = true;
+                enableCompleteButton(perfect);
+                
+                setTimeout(() => {
+                    gameState.modules[moduleId].status = 'completed';
+                    gameState.modules[moduleId].perfect = perfect;
+                    
+                    updateModuleUI(moduleId);
+                    updateProgress();
+                    closeModal();
+                    
+                    if (perfect) showMascotMessage(`🎉 Модуль ${moduleId} взломан идеально!`);
+                    gameState.currentModule = null;
+                    gameState.gameCompleted = false;
+                }, 2000);
+            }
+        });
+
+        function enableCompleteButton(perfect) {
+            const btn = document.getElementById('completeBtn');
+            btn.disabled = false;
+            btn.textContent = perfect ? '✅ Задание выполнено идеально!' : '⚠️ Задание выполнено (есть ошибки)';
+            btn.className = 'complete-btn active';
+        }
+
+        function resetCompleteButton() {
+            const btn = document.getElementById('completeBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Игра ещё не завершена...';
+            btn.className = 'complete-btn';
+        }
+
+        function startGame() {
+            document.getElementById('introScreen').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('introScreen').style.display = 'none';
+                const gameScreen = document.getElementById('gameScreen');
+                gameScreen.style.display = 'block';
+                setTimeout(() => {
+                    gameScreen.classList.add('visible');
+                    showMascotMessage("Выбери любой модуль для начала взлома!");
+                }, 100);
+            }, 500);
+        }
+
+        function openModule(moduleId) {
+            const module = gameState.modules[moduleId];
+            
+            if (module.status === 'completed') {
+                showMascotMessage(module.perfect ? "✅ Уже взломан идеально!" : "⚠️ Пройден с ошибками. Можно переделать!");
+                return;
+            }
+
+            if (module.status === 'waiting') {
+                module.status = 'in-progress';
+                updateModuleUI(moduleId);
+                updateProgress();
+            }
+
+            gameState.currentModule = moduleId;
+            gameState.gameCompleted = false;
+            resetCompleteButton();
+            
+            document.getElementById('modalTitle').textContent = `🔓 Модуль ${moduleId}: ${module.name}`;
+            document.getElementById('gameFrame').innerHTML = `<iframe src="${gameUrls[moduleId]}" id="gameIframe"></iframe>`;
+            document.getElementById('gameModal').style.display = 'block';
+            
+            showRulesPopup();
+        }
+
+        function showRulesPopup() {
+            const moduleId = gameState.currentModule;
+            if (!moduleId) return;
+            
+            const popup = document.getElementById('rulesPopup');
+            const title = document.getElementById('rulesTitle');
+            const text = document.getElementById('rulesText');
+            const examples = document.getElementById('toneExamplesPopup');
+            
+            title.textContent = `📋 Модуль ${moduleId}: ${gameState.modules[moduleId].name}`;
+            text.innerHTML = moduleHints[moduleId];
+            
+            if (moduleId === 1) {
+                examples.innerHTML = toneExamples;
+                examples.style.display = 'block';
+            } else {
+                examples.style.display = 'none';
+            }
+            
+            popup.classList.add('show');
+        }
+
+        function closeRulesPopup() {
+            document.getElementById('rulesPopup').classList.remove('show');
+            showMascotMessage("Удачи! 🚀");
+        }
+
+        function manualComplete() {
+            if (!gameState.gameCompleted) {
+                showMascotMessage("⚠️ Сначала заверши игру!");
+                return;
+            }
+        }
+
+        function updateModuleUI(moduleId) {
+            const module = gameState.modules[moduleId];
+            const btn = document.getElementById(`btn-${moduleId}`);
+            const status = document.getElementById(`status-${moduleId}`);
+            btn.classList.remove('in-progress', 'completed-perfect', 'completed-error');
+            
+            if (module.status === 'in-progress') {
+                btn.classList.add('in-progress');
+                status.textContent = '⏳';
+            } else if (module.status === 'completed') {
+                btn.classList.add(module.perfect ? 'completed-perfect' : 'completed-error');
+                status.textContent = module.perfect ? '✅' : '⚠️';
+                btn.disabled = true;
+            }
+        }
+
+        function updateProgress() {
+            const modules = gameState.modules;
+            const completedCount = Object.values(modules).filter(m => m.status === 'completed').length;
+            document.getElementById('progressFill').style.width = (completedCount / 3 * 100) + '%';
+            document.getElementById('progressText').textContent = `${completedCount}/3`;
+            
+            const exitBtn = document.getElementById('exitBtn');
+            if (completedCount === 3) {
+                exitBtn.disabled = false;
+                exitBtn.classList.add('ready');
+                showMascotMessage("🚀 Все модули активированы! Можно открывать шлюз!");
+            }
+        }
+
+        function closeModal() {
+            if (gameState.currentModule && !gameState.gameCompleted) {
+                if (confirm('⚠️ Игра не завершена! Если вы закроете окно сейчас, прогресс не будет сохранён.\n\nЗакрыть?')) {
+                    document.getElementById('gameModal').style.display = 'none';
+                    document.getElementById('gameFrame').innerHTML = '';
+                    gameState.currentModule = null;
+                    gameState.gameCompleted = false;
+                    resetCompleteButton();
+                }
+            } else {
+                document.getElementById('gameModal').style.display = 'none';
+                document.getElementById('gameFrame').innerHTML = '';
+                gameState.currentModule = null;
+                gameState.gameCompleted = false;
+                resetCompleteButton();
+            }
+        }
+
+        // ═══════════════════════════════════════
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ tryExit
+        function tryExit() {
+            const modules = gameState.modules;
+            const allPerfect = Object.values(modules).every(m => m.perfect);
+            const completedCount = Object.values(modules).filter(m => m.status === 'completed').length;
+            
+            // Если не все модули пройдены
+            if (completedCount < 3) {
+                showMascotMessage("⚠️ Сначала взломайте все 3 модуля!");
+                return;
+            }
+            
+            // Показываем экран победы
+            document.getElementById('victoryScreen').classList.add('show');
+            
+            // Элементы для изменения
+            const victoryText = document.getElementById('victoryText');
+            const victorySubtext = document.getElementById('victorySubtext');
+            const finalMessage = document.getElementById('finalMessage');
+            const rocketContainer = document.getElementById('rocketContainer');
+            const retryBtn = document.getElementById('retryBtn');
+            const catSprite = document.getElementById('catSprite');
+            
+            if (allPerfect) {
+                // ═══════════════════════════════════════
+                // ИДЕАЛЬНОЕ ОКОНЧАНИЕ
+                // ═══════════════════════════════════════
+                victoryText.textContent = '🏆 МИССИЯ ВЫПОЛНЕНА! 🏆';
+                victoryText.style.color = '#00f3ff';
+                victorySubtext.textContent = 'Все модули взломаны идеально!\nКорабль "Лингво-1" спасён!';
+                finalMessage.textContent = 'Спасибо за помощь, Агент! Глюк отправляется домой! 🌟';
+                finalMessage.style.background = 'rgba(0, 243, 255, 0.9)';
+                
+                // Кот довольный
+                catSprite.textContent = '🐱';
+                
+                // Запускаем анимацию ракеты
+                rocketContainer.style.animation = 'none';
+                rocketContainer.style.opacity = '1';
+                setTimeout(() => {
+                    rocketContainer.style.animation = 'rocketLaunch 8s ease-in forwards';
+                }, 100);
+                
+                // Скрываем кнопку переиграть
+                retryBtn.style.display = 'none';
+                
+                setTimeout(() => {
+                    alert('🏆 ПОБЕДА!\n\nВсе модули взломаны идеально!\nКорабль "Лингво-1" спасён!\nТы настоящий мастер языков!\n\nГлюк благодарит тебя и улетает домой! 🚀');
+                }, 10000);
+                
+            } else {
+                // ═══════════════════════════════════════
+                // НЕИДЕАЛЬНОЕ ОКОНЧАНИЕ (были ошибки)
+                // ═══════════════════════════════════════
+                victoryText.textContent = '⚠️ МИССИЯ ЗАВЕРШЕНА';
+                victoryText.style.color = '#ffa500';
+                victorySubtext.textContent = 'Корабль спасён, но не все модули взломаны идеально.';
+                finalMessage.textContent = 'Глюк благодарит за помощь, но рекомендует потренироваться ещё... 📚';
+                finalMessage.style.background = 'rgba(255, 165, 0, 0.9)';
+                
+                // Кот не очень доволен
+                catSprite.textContent = '😿';
+                
+                // Останавливаем ракету
+                rocketContainer.style.animation = 'none';
+                rocketContainer.style.opacity = '0.3';
+                
+                // Показываем кнопку переиграть
+                retryBtn.style.display = 'block';
+                
+                setTimeout(() => {
+                    alert('⚠️ МИССИЯ ЗАВЕРШЕНА\n\nКорабль спасён, но были ошибки.\nНе все модули взломаны идеально.\n\nГлюк благодарит за помощь,\nно рекомендует потренироваться ещё!\n\nНажми "Исправить ошибки" чтобы пройти заново! 📚');
+                }, 5000);
+            }
+        }
+
+        // ═══════════════════════════════════════
+        // НОВАЯ ФУНКЦИЯ: Переиграть
+        // ═══════════════════════════════════════
+        function retryGame() {
+            if (confirm('🔄 Начать миссию заново?\n\nВсе прогрессы будут сброшены.')) {
+                location.reload();
+            }
+        }
+
+        function showMascotMessage(text) {
+            const bubble = document.getElementById('mascotBubble');
+            bubble.textContent = text;
+            bubble.style.display = 'block';
+            setTimeout(() => { bubble.style.display = 'none'; }, 5000);
+        }
+
+        function showHint() {
+            if (gameState.currentModule) {
+                showRulesPopup();
+            } else {
+                const completedCount = Object.values(gameState.modules).filter(m => m.status === 'completed').length;
+                if (completedCount === 0) showMascotMessage("Нажми на любой модуль, чтобы начать взлом!");
+                else if (completedCount < 3) showMascotMessage(`Взломано ${completedCount} из 3 модулей. Продолжай!`);
+                else showMascotMessage("Все модули готовы! Жми 'Активировать шлюз'!");
+            }
+        }
+
+        document.getElementById('gameModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>

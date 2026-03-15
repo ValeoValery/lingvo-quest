@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Фонетический код - Космическая миссия</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .game-header {
+            text-align: center;
+            padding: 8px 15px;
+            background: rgba(0, 243, 255, 0.1);
+            border-bottom: 2px solid #00f3ff;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        .game-title {
+            color: #00f3ff;
+            font-size: clamp(14px, 3vw, 18px);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #00f3ff;
+            margin-bottom: 3px;
+        }
+
+        .progress-info {
+            font-size: clamp(12px, 2.5vw, 14px);
+            color: #0aff0a;
+            font-weight: bold;
+        }
+
+        .progress-info span {
+            font-size: clamp(16px, 3.5vw, 20px);
+            color: #0aff0a;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 15px;
+            gap: 20px;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .play-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .play-btn {
+            width: clamp(100px, 20vh, 140px);
+            height: clamp(100px, 20vh, 140px);
+            background: linear-gradient(135deg, #ffa500, #ff6b6b);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(50px, 10vh, 70px);
+            box-shadow: 0 0 30px rgba(255, 165, 0, 0.6);
+            transition: all 0.3s;
+            animation: pulse-glow 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 165, 0, 0.6); }
+            50% { box-shadow: 0 0 40px rgba(255, 165, 0, 0.9); }
+        }
+
+        .play-btn:active { transform: scale(0.9); }
+        .play-hint { text-align: center; color: #aaa; font-size: clamp(11px, 2.5vw, 13px); }
+
+        .options-container {
+            display: flex;
+            gap: clamp(15px, 4vw, 30px);
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .option-card {
+            width: clamp(160px, 35vw, 220px);
+            height: clamp(120px, 22vh, 160px);
+            background: rgba(0, 243, 255, 0.15);
+            border: 3px solid #00f3ff;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .option-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.3) 0%, transparent 70%);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .option-card:hover::before { opacity: 1; }
+        .option-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 243, 255, 0.5);
+            background: rgba(0, 243, 255, 0.25);
+        }
+        .option-card.correct {
+            background: rgba(10, 255, 10, 0.4);
+            border-color: #0aff0a;
+            animation: correct-pulse 0.5s;
+        }
+        .option-card.wrong {
+            background: rgba(255, 0, 60, 0.4);
+            border-color: #ff003c;
+            animation: shake 0.5s;
+        }
+
+        @keyframes correct-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .tone-symbol {
+            font-size: clamp(40px, 8vw, 56px);
+            font-weight: bold;
+            color: #00f3ff;
+            z-index: 1;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+        .tone-name {
+            font-size: clamp(12px, 2.5vw, 15px);
+            color: #ccc;
+            margin-top: 8px;
+            z-index: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .message {
+            text-align: center;
+            font-size: clamp(14px, 3vw, 18px);
+            min-height: 25px;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .message.success { color: #0aff0a; background: rgba(10, 255, 10, 0.2); border: 1px solid #0aff0a; }
+        .message.error { color: #ff6b8a; background: rgba(255, 0, 60, 0.2); border: 1px solid #ff003c; }
+
+        .victory-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .victory-screen.show { display: flex; }
+
+        .victory-text {
+            font-size: clamp(28px, 7vw, 42px);
+            color: #0aff0a;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 30px #0aff0a;
+            animation: victory-pulse 1s infinite;
+        }
+        @keyframes victory-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .victory-btn {
+            padding: clamp(12px, 3vh, 15px) clamp(30px, 8vw, 50px);
+            background: #0aff0a;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: clamp(14px, 3vw, 18px);
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 25px #0aff0a;
+            transition: transform 0.2s;
+        }
+        .victory-btn:active { transform: scale(0.95); }
+
+        @media (max-width: 480px) and (max-height: 600px) {
+            .option-card { width: 45%; height: 130px; }
+            .tone-symbol { font-size: 32px; }
+            .tone-name { font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="game-header">
+        <div class="game-title">🔊 Фонетический код</div>
+        <div class="progress-info">Правильно: <span id="correctCount">0</span> из 5</div>
+    </div>
+
+    <div class="game-area">
+        <div class="play-container">
+            <button class="play-btn" onclick="playCurrentWord()" id="playBtn">🔊</button>
+            <div class="play-hint">Слушай и выбирай</div>
+        </div>
+        <div class="options-container" id="optionsContainer"></div>
+        <div class="message" id="message"></div>
+    </div>
+
+    <div class="victory-screen" id="victoryScreen">
+        <div class="victory-text">🎉 МОДУЛЬ ВЗЛОМАН!</div>
+        <button class="victory-btn" onclick="completeGame()">Готово</button>
+    </div>
+
+    <script>
+        const words = [
+            { pinyin: 'mā', meaning: 'мама' }, { pinyin: 'má', meaning: 'конопля' },
+            { pinyin: 'mǎ', meaning: 'лошадь' }, { pinyin: 'mà', meaning: 'ругать' },
+            { pinyin: 'bā', meaning: 'восемь' }, { pinyin: 'bá', meaning: 'вырывать' },
+            { pinyin: 'bǎ', meaning: 'держать' }, { pinyin: 'bà', meaning: 'папа' },
+            { pinyin: 'shū', meaning: 'книга' }, { pinyin: 'shú', meaning: 'зрелый' },
+            { pinyin: 'shǔ', meaning: 'мышь' }, { pinyin: 'shù', meaning: 'дерево' },
+            { pinyin: 'yī', meaning: 'один' }, { pinyin: 'yí', meaning: 'сдвиг' },
+            { pinyin: 'yǐ', meaning: 'уже' }, { pinyin: 'yì', meaning: 'легко' },
+            { pinyin: 'zhōng', meaning: 'центр' }, { pinyin: 'zhǒng', meaning: 'вид' },
+            { pinyin: 'chóng', meaning: 'повторять' }, { pinyin: 'zhòng', meaning: 'важный' }
+        ];
+
+        let correctCount = 0;
+        let currentWord = null;
+        let isProcessing = false;
+        let hadErrors = false;
+
+        window.onload = function() {
+            createStars();
+            nextQuestion();
+        };
+
+        function createStars() {
+            const container = document.getElementById('stars');
+            for (let i = 0; i < 80; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(star);
+            }
+        }
+
+        function nextQuestion() {
+            isProcessing = false;
+            document.getElementById('message').textContent = '';
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentWord = words[randomIndex];
+            let wrongWord;
+            do {
+                const wrongIndex = Math.floor(Math.random() * words.length);
+                wrongWord = words[wrongIndex];
+            } while (wrongWord.pinyin === currentWord.pinyin);
+            const options = Math.random() > 0.5 ? [currentWord, wrongWord] : [wrongWord, currentWord];
+            displayOptions(options);
+            setTimeout(() => playCurrentWord(), 800);
+        }
+
+        function displayOptions(options) {
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            options.forEach(option => {
+                const card = document.createElement('div');
+                card.className = 'option-card';
+                card.onclick = () => checkAnswer(option, card);
+                const symbol = document.createElement('div');
+                symbol.className = 'tone-symbol';
+                symbol.textContent = option.pinyin;
+                const name = document.createElement('div');
+                name.className = 'tone-name';
+                name.textContent = option.meaning;
+                card.appendChild(symbol);
+                card.appendChild(name);
+                container.appendChild(card);
+            });
+        }
+
+        function playCurrentWord() {
+            if (!currentWord) return;
+            const utterance = new SpeechSynthesisUtterance(currentWord.pinyin);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.75;
+            const voices = speechSynthesis.getVoices();
+            const chineseVoice = voices.find(v => v.lang.includes('zh'));
+            if (chineseVoice) utterance.voice = chineseVoice;
+            speechSynthesis.speak(utterance);
+            const btn = document.getElementById('playBtn');
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 200);
+        }
+
+        function checkAnswer(selectedWord, cardElement) {
+            if (isProcessing) return;
+            const messageEl = document.getElementById('message');
+            if (selectedWord.pinyin === currentWord.pinyin) {
+                isProcessing = true;
+                correctCount++;
+                document.getElementById('correctCount').textContent = correctCount;
+                cardElement.classList.add('correct');
+                messageEl.textContent = '✅ Верно!';
+                messageEl.className = 'message success';
+                playSuccessSound();
+                setTimeout(() => {
+                    if (correctCount >= 5) {
+                        showVictory();
+                    } else {
+                        nextQuestion();
+                    }
+                }, 1200);
+            } else {
+                hadErrors = true;
+                correctCount = 0;
+                document.getElementById('correctCount').textContent = correctCount;
+                cardElement.classList.add('wrong');
+                messageEl.textContent = '❌ Ошибка! Счётчик сброшен';
+                messageEl.className = 'message error';
+                playErrorSound();
+                setTimeout(() => {
+                    cardElement.classList.remove('wrong');
+                    messageEl.textContent = '';
+                }, 1500);
+            }
+        }
+
+        function playSuccessSound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 880; osc.type = 'sine';
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
+        }
+
+        function playErrorSound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 150; osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            osc.start(); osc.stop(ctx.currentTime + 0.4);
+        }
+
+        function showVictory() {
+            document.getElementById('victoryScreen').classList.add('show');
+            playVictorySound();
+        }
+
+        function playVictorySound() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [523, 659, 784, 1047].forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, ctx.currentTime + i*0.15);
+                gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i*0.15 + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i*0.15 + 0.4);
+                osc.start(ctx.currentTime + i*0.15);
+                osc.stop(ctx.currentTime + i*0.15 + 0.4);
+            });
+        }
+
+        // ═══════════════════════════════════════
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ
+        function completeGame() {
+            if (window.parent !== window) {
+                window.parent.postMessage({ 
+                    type: 'moduleComplete',  // ← БЫЛО: action, СТАЛО: type
+                    moduleId: 1, 
+                    perfect: !hadErrors
+                }, '*');
+            }
+            window.close();
+        }
+        // ═══════════════════════════════════════
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+        }
+    </script>
+</body>
+</html>
